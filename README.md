@@ -16,6 +16,8 @@ It works for date nights, roommates, friend groups, team offsites, family movie 
 ![Plan](docs/img/04-plan.jpg)
 ![Constellation](docs/img/05-constellation.jpg)
 
+**Live demo:** https://common-ground-sama-5806.vercel.app — currently running in **MOCK mode** (amber `DEMO DATA · MOCK` badge) until the Qloo hackathon API key is configured server-side.
+
 ## Run it (one command)
 
 Requires Node 20+. **No dependencies, no build step.**
