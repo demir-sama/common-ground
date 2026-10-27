@@ -1,0 +1,109 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Common Ground — the taste mediator</title>
+  <meta name="description" content="Two tastes, one night. An agent that finds what you'll both love, grounded in Qloo's taste graph." />
+  <meta name="theme-color" content="#0b0a12" />
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Ccircle cx='24' cy='32' r='18' fill='%23ff5d8f' fill-opacity='.85'/%3E%3Ccircle cx='40' cy='32' r='18' fill='%234de1c1' fill-opacity='.85'/%3E%3C/svg%3E" />
+  <link rel="stylesheet" href="/styles.css" />
+</head>
+<body>
+  <div class="aurora" aria-hidden="true"><i></i><i></i><i></i></div>
+  <div class="grain" aria-hidden="true"></div>
+
+  <header class="top">
+    <a class="brand" href="/" aria-label="Common Ground home">
+      <svg viewBox="0 0 64 40" width="38" height="24" aria-hidden="true"><circle cx="24" cy="20" r="16" fill="var(--c0)" fill-opacity=".9"/><circle cx="40" cy="20" r="16" fill="var(--c1)" fill-opacity=".9" style="mix-blend-mode:screen"/></svg>
+      <span>Common Ground</span>
+    </a>
+    <div class="top-right">
+      <span id="modeBadge" class="badge" hidden></span>
+      <a class="link" href="#how">How it works</a>
+    </div>
+  </header>
+
+  <main>
+    <section class="hero">
+      <p class="eyebrow">An agent with taste · powered by Qloo</p>
+      <h1>Two tastes.<br /><span class="grad">One great night.</span></h1>
+      <p class="sub">Tell it what each of you loves. The Mediator reads Qloo's taste graph, finds the ground you actually share, and plans a film, a soundtrack, a read and a place — for <em>everyone</em>, not just whoever argues loudest.</p>
+    </section>
+
+    <section class="builder" id="builder" aria-label="Who's in?">
+      <div class="builder-head">
+        <h2>Who's in?</h2>
+        <div class="presets" id="presets" role="group" aria-label="Quick examples"></div>
+      </div>
+      <div id="people" class="people"></div>
+      <div class="row">
+        <button class="ghost" id="addPerson" type="button">+ Add a person</button>
+        <label class="field city"><span>City for places</span>
+          <input id="city" list="cityList" placeholder="e.g. London" autocomplete="off" />
+          <datalist id="cityList"></datalist>
+        </label>
+      </div>
+      <div class="domains" id="domains" role="group" aria-label="What should we find?"></div>
+      <div class="go">
+        <button class="cta" id="go" type="button"><span>Find common ground</span><svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+        <p class="hint" id="goHint">Each person needs at least one thing they love.</p>
+      </div>
+    </section>
+
+    <section class="trace" id="trace" hidden aria-live="polite" aria-label="Agent activity">
+      <h3><span class="pulse"></span> The Mediator is working</h3>
+      <ol id="traceList"></ol>
+    </section>
+
+    <section class="results" id="results" hidden>
+      <div class="verdict">
+        <div class="venn" id="venn" aria-hidden="true"></div>
+        <div class="verdict-copy">
+          <p class="eyebrow">The verdict</p>
+          <h2 id="headline"></h2>
+          <div class="ring-row">
+            <div class="ring" id="ring"><svg viewBox="0 0 80 80" aria-hidden="true"><circle cx="40" cy="40" r="34" class="track"/><circle cx="40" cy="40" r="34" class="bar" id="ringBar"/></svg><b id="ringVal">0%</b></div>
+            <div><b>Taste overlap</b><small>how much of your taste graphs coincide</small></div>
+          </div>
+          <div class="chips" id="shared" aria-label="Shared taste"></div>
+        </div>
+      </div>
+
+      <h3 class="sec">The plan for tonight</h3>
+      <div class="plan" id="plan"></div>
+
+      <h3 class="sec">Where everyone lands <small>— each orb is a pick; the closer to a person, the more they love it</small></h3>
+      <div class="constellation" id="constellation"></div>
+
+      <h3 class="sec">More that works for everyone</h3>
+      <div class="tabs" id="tabs" role="tablist"></div>
+      <div class="picks" id="picks"></div>
+
+      <div class="actions">
+        <button class="ghost" id="copy" type="button">Copy the plan</button>
+        <button class="ghost" id="again" type="button">Start over</button>
+      </div>
+      <p class="fine" id="disclaimer"></p>
+    </section>
+
+    <section class="how" id="how">
+      <h2>How the Mediator works</h2>
+      <div class="how-grid">
+        <article><b>1 · Profile</b><p>Each person's loved titles become signals for Qloo's taste analysis — returning the tags that describe their taste.</p></article>
+        <article><b>2 · Discover</b><p>Everyone's signals are combined across film, TV, music, books and places — Qloo's cross-domain graph connects a record to a restaurant.</p></article>
+        <article><b>3 · Be fair</b><p>Each candidate is re-scored against every person alone. Ranking is least-misery first, so nobody is dragged somewhere they'd hate.</p></article>
+        <article><b>4 · Explain</b><p>Every pick shows who loves it, how much, and which of your favourites it echoes.</p></article>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <span>Built for the Qloo Agentic Hackathon · MIT licensed</span>
+    <span>Results are aggregate cultural affinities, not predictions about any individual.</span>
+  </footer>
+
+  <div class="tooltip" id="tooltip" role="status" hidden></div>
+  <script type="module" src="/app.js"></script>
+</body>
+</html>

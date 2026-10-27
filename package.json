@@ -1,0 +1,16 @@
+{
+  "name": "common-ground-qloo",
+  "version": "1.0.0",
+  "description": "Common Ground — a taste-mediator agent grounded in Qloo's taste graph.",
+  "type": "module",
+  "license": "MIT",
+  "private": false,
+  "engines": { "node": ">=20" },
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node --watch server.js",
+    "test": "node --test test/",
+    "mock": "QLOO_FORCE_MOCK=1 node server.js"
+  },
+  "author": "Demir <demirsamahash@gmail.com>"
+}
