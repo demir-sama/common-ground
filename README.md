@@ -11,6 +11,8 @@ Common Ground is an agentic web app built for the **Qloo LLM / Agentic Hackathon
 
 It works for date nights, roommates, friend groups, team offsites, family movie night… anywhere two people with different taste have to share one evening. Taste is universal, so the product is too — it is language- and country-agnostic. In live mode any city Qloo has place data for works (verified with Lagos, London, New York and Tokyo); the offline mock ships with six cities.
 
+*Screenshots below are from the deployed demo running on live Qloo data (Lagos preset).*
+
 ![Home](docs/img/01-home.jpg)
 ![Verdict](docs/img/03-verdict.jpg)
 ![Plan](docs/img/04-plan.jpg)
