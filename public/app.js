@@ -15,8 +15,11 @@ const PRESETS = [
     { name: 'Sam', loves: ['Phoebe Bridgers', 'Fleabag', 'Normal People'] } ] },
   { label: 'Friend trio', city: 'Tokyo', people: [
     { name: 'Kai', loves: ['Nujabes', 'Spirited Away'] },
-    { name: 'Lina', loves: ['Severance', 'Daft Punk'] },
+    { name: 'Lina', loves: ['Severance|tv_show', 'Daft Punk'] },
     { name: 'Omar', loves: ['Parasite', 'Kendrick Lamar'] } ] },
+  { label: 'Lagos night out', city: 'Lagos', people: [
+    { name: 'Ade', loves: ['Burna Boy', 'Black Panther'] },
+    { name: 'Tola', loves: ['Wizkid', 'Money Heist|tv_show'] } ] },
 ];
 
 const state = { people: [], city: '', domains: new Set(['movie', 'tv_show', 'artist', 'book', 'place']), mode: 'mock', result: null, running: false };
@@ -110,8 +113,9 @@ async function loadPreset(preset, btn) {
     const people = [];
     for (const [i, p] of preset.people.entries()) {
       const loves = [];
-      for (const name of p.loves) {
-        const r = await api(`/api/search?q=${encodeURIComponent(name)}`);
+      for (const spec of p.loves) {
+        const [name, type] = spec.split('|');
+        const r = await api(`/api/search?q=${encodeURIComponent(name)}${type ? `&type=${type}` : ''}`);
         const hit = (r.results ?? []).find((e) => e.name.toLowerCase() === name.toLowerCase()) ?? r.results?.[0];
         if (hit) loves.push(hit);
       }

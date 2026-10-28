@@ -20,7 +20,7 @@ async function readJson(req) {
   if (req.body !== undefined && req.body !== null) return typeof req.body === 'string' ? JSON.parse(req.body) : req.body;
   const chunks = [];
   let size = 0;
-  for await (const c of req) { size += c.length; if (size > 64_000) throw new Error('Body too large'); chunks.push(c); }
+  for await (const c of req) { size += c.length; if (size > 256_000) throw new Error('Body too large'); chunks.push(c); }
   return JSON.parse(Buffer.concat(chunks).toString('utf8') || '{}');
 }
 

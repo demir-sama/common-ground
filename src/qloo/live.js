@@ -24,27 +24,53 @@ const HINTS = {
   429: 'Rate limit hit. Retry shortly or ask for a higher quota in the Qloo Discord #api-help.',
 };
 
+const MEDIA_PARENTS = ['movie', 'tv_show', 'artist', 'book', 'podcast'];
+const PLACE_TAG = 'urn:tag:genre:place:restaurant';
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 const asArray = (x) => (Array.isArray(x) ? x : x ? [x] : []);
+
+// Qloo returns slightly different shapes per endpoint:
+//   /search          -> { types: ['urn:entity:movie'], properties.image.url, tags[{ id, name }] }
+//   /v2/insights     -> { subtype: 'urn:entity:movie', query.affinity, tags[{ id, name }] }
+//   places           -> properties.images[], properties.address, location { lat, lon }
+//   tag analysis     -> results.tags[{ tag_id, name, query.affinity }]
+const typeUrnOf = (raw) => {
+  const t = raw.subtype ?? (Array.isArray(raw.types) ? raw.types[0] : raw.types) ?? raw.type ?? '';
+  return typeof t === 'string' && t.startsWith('urn:entity:') ? t : (Array.isArray(raw.types) ? raw.types.find((x) => x?.startsWith?.('urn:entity:')) ?? '' : '');
+};
+const englishOf = (list) => asArray(list).find((x) => x?.language === 'en')?.value ?? asArray(list)[0]?.value;
+const truncate = (s, n = 280) => (s.length > n ? `${s.slice(0, n - 1).replace(/\s+\S*$/, '')}…` : s);
+
+// Qloo can attach 300+ tags to one entity (mostly plot keywords). Keep the taste-bearing ones
+// (genre, style, theme, audience...) first and cap the list so payloads stay small.
+const KEYWORD_RE = /^urn:tag:keyword:/;
+export function normalizeTags(rawTags, max = 30) {
+  const tags = asArray(rawTags).map((t) => ({ id: t.id ?? t.tag_id, name: t.name })).filter((t) => t.id && t.name);
+  const rank = (t) => (KEYWORD_RE.test(t.id) ? 1 : 0);
+  return tags.map((t, i) => ({ t, i })).sort((a, b) => rank(a.t) - rank(b.t) || a.i - b.i).slice(0, max).map(({ t }) => t);
+}
 
 export function normalizeEntity(raw) {
   if (!raw) return null;
   const p = raw.properties ?? {};
-  const type = keyOfUrn(raw.subtype ?? raw.type ?? '');
-  const desc = p.description ?? p.short_description ?? asArray(p.short_descriptions)[0]?.value ?? '';
-  const year = p.release_year ?? (p.publication_year ?? null);
-  const city = raw.location?.name ?? p.geocode?.name ?? null;
-  const subtitle = [year, type === 'place' ? (p.address ?? city) : city].filter(Boolean).join(' · ') || (raw.disambiguation ?? '');
-  const affinity = raw.query?.affinity ?? raw.query?.measurements?.affinity ?? raw.affinity ?? undefined;
+  const type = keyOfUrn(typeUrnOf(raw));
+  const short = typeof p.short_description === 'string' ? p.short_description : englishOf(p.short_descriptions);
+  const long = typeof p.description === 'string' ? p.description : '';
+  const desc = short || long;
+  const year = p.release_year ?? p.publication_year ?? (typeof p.release_date === 'string' ? Number(p.release_date.slice(0, 4)) || null : null);
+  const where = type === 'place' ? [p.neighborhood ?? p.geocode?.name, p.geocode?.city].filter((x, i, a) => x && a.indexOf(x) === i).join(', ') : '';
+  const subtitle = [year, where || (type === 'place' ? p.address : '')].filter(Boolean).join(' · ') || (raw.disambiguation && raw.disambiguation !== raw.name ? raw.disambiguation : '');
+  const affinity = raw.query?.affinity ?? raw.query?.measurements?.affinity ?? raw.affinity;
+  const image = p.image?.url ?? asArray(p.images)[0]?.url ?? null;
   return {
     id: raw.entity_id ?? raw.id,
     name: raw.name,
     type,
     year: year ?? null,
     subtitle,
-    description: typeof desc === 'string' ? desc : '',
-    image: p.image?.url ?? null,
-    tags: asArray(raw.tags).map((t) => ({ id: t.id ?? t.tag_id, name: t.name })).filter((t) => t.id && t.name),
+    description: truncate(String(desc ?? '')),
+    image,
+    tags: normalizeTags(raw.tags),
     ...(typeof affinity === 'number' ? { affinity } : {}),
   };
 }
@@ -112,10 +138,20 @@ export class LiveQlooClient {
     return rows.map(normalizeEntity).filter((e) => e?.id && e.name);
   }
 
-  /** Taste analysis: which tags best describe this set of entities. */
-  async tasteTags(entityIds, { take = 14 } = {}) {
+  /**
+   * Taste analysis: which tags best describe this set of entities (Insights with filter.type=urn:tag).
+   * `parentTypes` limits tags to the entity types the signals came from (without it Qloo mixes in
+   * unrelated place/brand tags such as "VISA" or "Women-owned").
+   */
+  async tasteTags(entityIds, { take = 14, parentTypes } = {}) {
     if (!entityIds.length) return [];
-    const body = await this.request('/v2/insights', { 'filter.type': 'urn:tag', 'signal.interests.entities': entityIds, take });
+    if (!parentTypes?.length) parentTypes = MEDIA_PARENTS;
+    const body = await this.request('/v2/insights', {
+      'filter.type': 'urn:tag',
+      'filter.parents.types': [...new Set(parentTypes)].map((t) => (t.startsWith('urn:') ? t : urnOf(t))).filter(Boolean),
+      'signal.interests.entities': entityIds,
+      take,
+    });
     return asArray(body.results?.tags).map((t) => ({
       id: t.tag_id ?? t.id, name: t.name, affinity: t.query?.affinity ?? t.affinity ?? 0.5,
     })).filter((t) => t.id && t.name);
@@ -129,6 +165,8 @@ export class LiveQlooClient {
       'filter.exclude.entities': excludeEntities,
       'filter.results.entities': resultEntities ?? undefined,
       'filter.location.query': type === 'place' ? location ?? undefined : undefined,
+      // Without a category Qloo also returns ATMs, bus stops and the like; we want somewhere to eat/drink together.
+      'filter.tags': type === 'place' ? PLACE_TAG : undefined,
       take: Math.min(take, 50),
     };
     const body = await this.request('/v2/insights', params);

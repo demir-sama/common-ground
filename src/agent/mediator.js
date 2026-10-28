@@ -47,9 +47,12 @@ export async function runMediator({ client, input, emit = () => {}, env = proces
   const profiles = await pool(people.map((p, i) => async () => {
     const id = `profile-${i}`;
     step(id, `Profiling ${p.name}'s taste`, `${p.entities.length} signals → taste tags`, 'qloo.tasteTags');
-    const tags = await client.tasteTags(p.entities.map((e) => e.id), { take: 16 }).catch(() => []);
+    const tags = await client.tasteTags(p.entities.map((e) => e.id), { take: 16, parentTypes: p.entities.map((e) => e.type).filter((t) => t && t !== 'place') }).catch(() => []);
+    // Qloo's taste analysis surfaces each person's most *distinctive* tags; blend in the loved things' own
+    // Qloo tags (at lower weight) so that two people who share broad tastes (Rock, Atmospheric, Fiction...) show overlap.
+    const merged = mergeTags(tags, fallbackTags(p));
     done(id, tags.length ? `Top tags: ${tags.slice(0, 5).map((t) => t.name).join(', ')}` : 'No tags returned — falling back to the entities\' own tags');
-    return { id: p.id, name: p.name, tags: tags.length ? tags : fallbackTags(p) };
+    return { id: p.id, name: p.name, tags: merged };
   }), 4);
 
   // 3 — overlap + common ground
@@ -113,8 +116,18 @@ export async function runMediator({ client, input, emit = () => {}, env = proces
   return result;
 }
 
+function mergeTags(primary, secondary) {
+  const m = new Map(primary.map((t) => [t.id, t]));
+  for (const t of secondary) {
+    const w = primary.length ? t.affinity * 0.8 : t.affinity;
+    const cur = m.get(t.id);
+    if (!cur) m.set(t.id, { ...t, affinity: w });
+  }
+  return [...m.values()].sort((a, b) => b.affinity - a.affinity);
+}
+
 function fallbackTags(person) {
   const m = new Map();
   for (const e of person.entities) for (const t of e.tags ?? []) m.set(t.id, { id: t.id, name: t.name, affinity: Math.min(0.95, (m.get(t.id)?.affinity ?? 0.3) + 0.2) });
-  return [...m.values()].sort((a, b) => b.affinity - a.affinity).slice(0, 14);
+  return [...m.values()].sort((a, b) => b.affinity - a.affinity).slice(0, 40);
 }

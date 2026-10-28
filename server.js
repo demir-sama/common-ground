@@ -7,8 +7,9 @@ import { fileURLToPath } from 'node:url';
 
 // Minimal .env loader (no dependency). Real env vars win.
 const here = path.dirname(fileURLToPath(import.meta.url));
-const envFile = path.join(here, '.env');
-if (existsSync(envFile)) {
+for (const name of ['.env.local', '.env']) {
+  const envFile = path.join(here, name);
+  if (!existsSync(envFile)) continue;
   for (const line of readFileSync(envFile, 'utf8').split(/\r?\n/)) {
     const m = line.match(/^\s*([A-Z0-9_]+)\s*=\s*(.*?)\s*$/);
     if (m && !(m[1] in process.env)) process.env[m[1]] = m[2].replace(/^['"]|['"]$/g, '');
